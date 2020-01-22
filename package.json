@@ -1,6 +1,7 @@
 {
   "name": "elentools",
   "version": "1.0.0",
+  "private": true,
   "description": "ElenTools - Blockbench Plugins",
   "dependencies": {},
   "devDependencies": {

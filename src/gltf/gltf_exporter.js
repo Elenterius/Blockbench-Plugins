@@ -85,15 +85,15 @@ function init_GLTFExporterPlugin() {
     });
 
     Plugin.register('gltf_exporter', {
-        title: 'GLTF Exporter',
+        title: 'glTF Exporter',
         author: 'Elenterius',
         icon: 'icon-objects',
-        description: 'Export Model to GLTF Fileformat',
+        description: 'Export Model to glTF Fileformat',
         version: '1.0.0-alpha.1',
         variant: 'both',
         onload() {
             MenuBar.addAction(codec.export_action, 'file.export');
-            console.log("GLTF Exporter Plugin loaded!");
+            console.log("glTF Exporter Plugin loaded!");
         },
         onunload() {
             codec.export_action.delete();
