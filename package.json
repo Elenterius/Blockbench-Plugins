@@ -1,0 +1,16 @@
+{
+  "name": "elentools",
+  "version": "1.0.0",
+  "description": "ElenTools - Blockbench Plugins",
+  "dependencies": {},
+  "devDependencies": {
+    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10"
+  },
+  "scripts": {
+    "webpack": "webpack",
+    "watch": "webpack --watch"
+  },
+  "author": "Elenterius",
+  "license": "MIT"
+}
