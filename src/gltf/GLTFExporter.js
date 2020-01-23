@@ -150,9 +150,7 @@ THREE.GLTFExporter.prototype = {
 		 * @return {Integer}
 		 */
 		function getUID(object) {
-
 			if (!uids.has(object)) { uids.set(object, uid++); }
-
 			return uids.get(object);
 		}
 
@@ -163,13 +161,9 @@ THREE.GLTFExporter.prototype = {
 		 * @return {Boolean}        Returns true if both arrays are equal
 		 */
 		function equalArray(array1, array2) {
-
 			return (array1.length === array2.length) && array1.every(function (element, index) {
-
 				return element === array2[index];
-
 			});
-
 		}
 
 		/**
@@ -178,26 +172,20 @@ THREE.GLTFExporter.prototype = {
 		 * @return {ArrayBuffer}
 		 */
 		function stringToArrayBuffer(text) {
-
 			if (window.TextEncoder !== undefined) {
-
 				return new TextEncoder().encode(text).buffer;
-
 			}
 
 			var array = new Uint8Array(new ArrayBuffer(text.length));
 
 			for (var i = 0, il = text.length; i < il; i++) {
-
 				var value = text.charCodeAt(i);
 
 				// Replacing multi-byte character with space(0x20).
 				array[i] = value > 0xFF ? 0x20 : value;
-
 			}
 
 			return array.buffer;
-
 		}
 
 		/**
@@ -1046,7 +1034,7 @@ THREE.GLTFExporter.prototype = {
 			} else {
 
 				if (!geometry.isBufferGeometry) {
-					console.warn('GLTFExporter: Exporting THREE.Geometry will increase file size. Use THREE.BufferGeometry instead.');
+					// console.warn('GLTFExporter: Exporting THREE.Geometry will increase file size. Use THREE.BufferGeometry instead.');
 					geometry = new THREE.BufferGeometry().fromGeometry(geometry);
 				}
 
@@ -1395,9 +1383,7 @@ THREE.GLTFExporter.prototype = {
 		function processAnimation(clip, root) {
 
 			if (!outputJSON.animations) {
-
 				outputJSON.animations = [];
-
 			}
 
 			clip = THREE.GLTFExporter.Utils.mergeMorphTargetTracks(clip.clone(), root);
@@ -1416,31 +1402,22 @@ THREE.GLTFExporter.prototype = {
 				if (trackBinding.objectName === 'bones') {
 
 					if (trackNode.isSkinnedMesh === true) {
-
 						trackNode = trackNode.skeleton.getBoneByName(trackBinding.objectIndex);
-
 					} else {
-
 						trackNode = undefined;
-
 					}
-
 				}
 
 				if (!trackNode || !trackProperty) {
-
 					console.warn('THREE.GLTFExporter: Could not export animation track "%s".', track.name);
 					return null;
-
 				}
 
 				var inputItemSize = 1;
 				var outputItemSize = track.values.length / track.times.length;
 
 				if (trackProperty === PATH_PROPERTIES.morphTargetInfluences) {
-
 					outputItemSize /= trackNode.morphTargetInfluences.length;
-
 				}
 
 				var interpolation;
@@ -1460,45 +1437,34 @@ THREE.GLTFExporter.prototype = {
 					outputItemSize /= 3;
 
 				} else if (track.getInterpolation() === THREE.InterpolateDiscrete) {
-
 					interpolation = 'STEP';
-
 				} else {
-
 					interpolation = 'LINEAR';
-
 				}
 
 				samplers.push({
-
 					input: processAccessor(new THREE.BufferAttribute(track.times, inputItemSize)),
 					output: processAccessor(new THREE.BufferAttribute(track.values, outputItemSize)),
 					interpolation: interpolation
-
 				});
 
 				channels.push({
-
 					sampler: samplers.length - 1,
 					target: {
 						node: nodeMap.get(trackNode),
 						path: trackProperty
 					}
-
 				});
 
 			}
 
 			outputJSON.animations.push({
-
 				name: clip.name || 'clip_' + outputJSON.animations.length,
 				samplers: samplers,
 				channels: channels
-
 			});
 
 			return outputJSON.animations.length - 1;
-
 		}
 
 		function processSkin(object) {
@@ -1514,31 +1480,23 @@ THREE.GLTFExporter.prototype = {
 			var inverseBindMatrices = new Float32Array(skeleton.bones.length * 16);
 
 			for (var i = 0; i < skeleton.bones.length; ++i) {
-
 				joints.push(nodeMap.get(skeleton.bones[i]));
-
 				skeleton.boneInverses[i].toArray(inverseBindMatrices, i * 16);
-
 			}
 
 			if (outputJSON.skins === undefined) {
-
 				outputJSON.skins = [];
-
 			}
 
 			outputJSON.skins.push({
-
 				inverseBindMatrices: processAccessor(new THREE.BufferAttribute(inverseBindMatrices, 16)),
 				joints: joints,
 				skeleton: nodeMap.get(rootJoint)
-
 			});
 
 			var skinIndex = node.skin = outputJSON.skins.length - 1;
 
 			return skinIndex;
-
 		}
 
 		function processLight(light) {
@@ -1548,33 +1506,26 @@ THREE.GLTFExporter.prototype = {
 			if (light.name) lightDef.name = light.name;
 
 			lightDef.color = light.color.toArray();
-
 			lightDef.intensity = light.intensity;
 
 			if (light.isDirectionalLight) {
-
 				lightDef.type = 'directional';
-
-			} else if (light.isPointLight) {
-
+			}
+			else if (light.isPointLight) {
 				lightDef.type = 'point';
 				if (light.distance > 0) lightDef.range = light.distance;
-
-			} else if (light.isSpotLight) {
-
+			}
+			else if (light.isSpotLight) {
 				lightDef.type = 'spot';
 				if (light.distance > 0) lightDef.range = light.distance;
 				lightDef.spot = {};
 				lightDef.spot.innerConeAngle = (light.penumbra - 1.0) * light.angle * - 1.0;
 				lightDef.spot.outerConeAngle = light.angle;
-
 			}
 
 			if (light.decay !== undefined && light.decay !== 2) {
-
 				console.warn('THREE.GLTFExporter: Light decay may be lost. glTF is physically-based, '
 					+ 'and expects light.decay=2.');
-
 			}
 
 			if (light.target
@@ -1585,13 +1536,11 @@ THREE.GLTFExporter.prototype = {
 
 				console.warn('THREE.GLTFExporter: Light direction may be lost. For best results, '
 					+ 'make light.target a child of the light with position 0,0,-1.');
-
 			}
 
 			var lights = outputJSON.extensions['KHR_lights_punctual'].lights;
 			lights.push(lightDef);
 			return lights.length - 1;
-
 		}
 
 		/**
@@ -1741,9 +1690,7 @@ THREE.GLTFExporter.prototype = {
 					if (node !== null) {
 						nodes.push(node);
 					}
-
 				}
-
 			}
 
 			if (nodes.length > 0) {
