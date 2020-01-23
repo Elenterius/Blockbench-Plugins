@@ -214,11 +214,11 @@ function init_GLTFExporterPlugin() {
         author: 'Elenterius',
         icon: 'icon-objects',
         description: 'Export Model to glTF Fileformat',
-        version: '1.0.0-alpha.2',
+        version: '1.0.0-alpha.3',
         variant: 'both',
         onload() {
             MenuBar.addAction(codec.export_action, 'file.export');
-            console.log("glTF Exporter [1.0.0-alpha.2] loaded!");
+            console.log("glTF Exporter [1.0.0-alpha.3] loaded!");
         },
         onunload() {
             codec.export_action.delete();
