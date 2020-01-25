@@ -193,7 +193,7 @@ function init_GLTFExporterPlugin() {
                     '<h1>Export Settings</h1>'
                 ],
                 form: {
-                    geometry_name: { label: 'Geometry Name', type: 'input', value: name},
+                    geometry_name: { label: 'Geometry Name', type: 'input', value: name },
                     // binary: { label: 'Format', type: 'select', options: { json: '.gltf (json)', binary: '.glb (binary)' }, default: 'json' },
                     // scaleX: { label: 'Scale X', type: 'number', value: 1.0, step: 0.0001, readonly: true },
                     // scaleY: { label: 'Scale Y', type: 'number', value: 1.0, step: 0.0001, readonly: true },
@@ -215,16 +215,27 @@ function init_GLTFExporterPlugin() {
         }
     });
 
+    const version = '1.0.0-alpha.5';
     Plugin.register('gltf_exporter', {
         title: 'glTF Exporter',
         author: 'Elenterius',
         icon: 'icon-objects',
-        description: 'Export Model to glTF Fileformat',
-        version: '1.0.0-alpha.4',
+        description: 'Export Model with Animation to GL Transmission Format (glTF) Version 2.0',
+        about: '',
+        version: version,
         variant: 'both',
         onload() {
             MenuBar.addAction(codec.export_action, 'file.export');
-            console.log("glTF Exporter [1.0.0-alpha.4] loaded!");
+            console.log(`glTF Exporter [${version}] loaded!`);
+
+            const delay = document.querySelector('#plugin_list > li[plugin=gltf_exporter]') === undefined ? 500 : 100;
+            setTimeout(() => {
+                const li = document.querySelector('#plugin_list > li[plugin=gltf_exporter]');
+                if (!li.querySelector('div.github')) {
+                    const ahref = '<div class="github">view on <a href="https://github.com/Elenterius/Blockbench-Plugins">github</a></div>';
+                    li.querySelector('div.description').insertAdjacentHTML('afterend', ahref);
+                }
+            }, delay);
         },
         onunload() {
             codec.export_action.delete();
