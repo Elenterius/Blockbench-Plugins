@@ -1,4 +1,4 @@
-/**
+/*!
  * The MIT License
  *
  * Copyright © 2010-2020 three.js authors

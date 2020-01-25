@@ -1,7 +1,7 @@
 Plugin.register('custom_modded_entity_mode', {
     title: 'Custom Modded Entity Mode',
     author: 'Elenterius',
-    icon: 'icon',
+    icon: 'fa-cubes',
     description: 'Enables Multi-Textures and Animation Mode for Modded Entity ModelFormat',
     version: '1.0.0-alpha.1',
     variant: 'both',
