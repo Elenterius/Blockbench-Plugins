@@ -82,6 +82,8 @@ function init_GLTFExporterPlugin() {
                             data.push(virtualScale.x, virtualScale.y, virtualScale.z);
                             times.push(time);
                         });
+
+                        if (data.length > 0) keyframeTracks.push(new THREE.VectorKeyframeTrack(group.name + ".scale", times, data));
                     }
                 }
             }
@@ -230,7 +232,7 @@ function init_GLTFExporterPlugin() {
         }
     });
 
-    const version = '1.0.0-alpha.5.1.0';
+    const version = '1.0.0-alpha.5.2.0';
     Plugin.register('gltf_exporter', {
         title: 'glTF Exporter',
         author: 'Elenterius',
