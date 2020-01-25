@@ -4,7 +4,7 @@ import "./GLTFExporter"; //global injection for threejs
 
 function init_GLTFExporterPlugin() {
 
-    function buildAnimationClip() {
+    function buildAnimationClips() {
 
         const animationClips = [];
         Animator.animations.forEach(animation => {
@@ -128,48 +128,51 @@ function init_GLTFExporterPlugin() {
     }
 
     const codec = new Codec('gltf', {
-        name: 'GL Transmission Format (JSON)',
+        name: 'GL Transmission Format',
         extension: 'gltf',
         compile(options) {
             return new Promise(resolveMain => {
                 const old_scene_position = new THREE.Vector3().copy(scene.position);
-                scene.position.set(0, 0, 0);
+                scene.position.set(0, 0, 0); // not needed when exporting the geometry seperately from the scene
 
                 new Promise(resolve => {
                     const exporter = new THREE.GLTFExporter();
 
-                    //TODO: flip frontview with backview
+                    //TODO: fix forward vector of model
                     const blacklist = ["vertex_handles", "outline_group", "grid_group", "side_grid_x", "side_grid_y", "sun", "lights"]; // ambient light (sun) is not supported; could export lights
                     const exportlist = [];
                     scene.children.forEach(child => {
                         if (!blacklist.includes(child.name) && !(child instanceof THREE.TransformControls)) {
+
+                            // exclude meshes that are disabled for export
+                            if (child instanceof THREE.Mesh) {
+                                const mesh = elements.findInArray('uuid', child.name)
+                                if (!mesh) return;
+                                if (mesh.export === false) return;
+                            };
+
                             exportlist.push(child);
                         }
                     });
 
-                    //TODO: handle elements with export false
+                    if (options === undefined) {
+                        options = {};
+                    }
 
-                    // scene.traverse(child => {
-                    //     if (child instanceof THREE.Mesh) {
-                    //         const element = elements.findInArray('uuid', child.name)
-                    //         if (!element) return;
-                    //         if (element.export === false) return;
-                    //         console.log(element.name);
-                    //         export_mesh.push(child);
-                    //     };
-                    // });
+                    const scale = new THREE.Vector3(1,1,1); //TODO: implement rescaling of model
+                    const binary = false; //TODO: add support for writing binary to file
+                    const embedImages = true; // options.embedImages; TODO: fix NON-Relative URI path
+                    const animations = options.animations;
+                    const animationClips = animations ? buildAnimationClips() : [];
 
-                    const animationClips = buildAnimationClip();
-                    // https://sandbox.babylonjs.com/
-
-                    exporter.parse(exportlist, gltf => resolve(gltf), { binary: false, embedImages: true, animations: animationClips });
+                    exporter.parse(exportlist, gltf => resolve(gltf), { binary: binary, embedImages: embedImages, animations: animationClips });
                 }).then(gltf => {
                     scene.position.copy(old_scene_position);
                     resolveMain(JSON.stringify(gltf));
                 });
             });
         },
-        export() {
+        export(options) {
             const scope = this;
             if (isApp) {
                 Blockbench.export({
@@ -178,7 +181,7 @@ function init_GLTFExporterPlugin() {
                     name: this.fileName(),
                     startpath: this.startPath(),
                     custom_writer: (content, path) => {
-                        scope.compile().then(gltf => {
+                        scope.compile(options).then(gltf => {
                             content = gltf;
                             Blockbench.writeFile(path, { content }, path => scope.afterSave(path));
                         });
@@ -186,7 +189,7 @@ function init_GLTFExporterPlugin() {
                 })
             }
             else {
-                this.compile().then(content => {
+                this.compile(options).then(content => {
                     Blockbench.export({
                         type: this.name,
                         extensions: [this.extension],
@@ -200,12 +203,55 @@ function init_GLTFExporterPlugin() {
 
     codec.export_action = new Action({
         id: 'export_gltf',
-        name: "Export GLTF (.gltf)",
+        name: "Export GLTF",
         icon: 'icon-objects',
         description: 'Export Model to GLTF',
         category: 'file',
         click: () => {
-            codec.export();
+            new Dialog({
+                id: 'gltf_export_options',
+                title: 'Export glTF',
+                lines: [
+                    `<style>
+                        .dialog_bar {
+                            display: grid;
+                            grid-template-columns: 2fr 1fr;
+                        }
+                        .dialog_bar > :first-child:not(button) {
+                            width: min-content !important;
+                        }
+                        .dialog_bar > :last-child:not(button) {
+                            width: 100% !important;
+                            display: block !important;
+                        }
+                        #gltf_export_options > div:nth-child(10) {
+                            display: block;
+                            margin-top: 1rem;
+                        }
+                        input:read-only {
+                            cursor: not-allowed;
+                        }
+                    </style>`,
+                    '<h1>Export Settings</h1>'
+                ],
+                form: {
+                    // binary: { label: 'Format', type: 'select', options: { json: '.gltf (json)', binary: '.glb (binary)' }, default: 'json' },
+                    // scaleX: { label: 'Scale X', type: 'number', value: 1.0, step: 0.0001, readonly: true },
+                    // scaleY: { label: 'Scale Y', type: 'number', value: 1.0, step: 0.0001, readonly: true },
+                    // scaleZ: { label: 'Scale Z', type: 'number', value: 1.0, step: 0.0001, readonly: true },
+                    // embedImages: { label: 'Embed Images', type: 'checkbox', value: true },
+                    animations: { label: 'Animations', type: 'checkbox', value: true }
+                },
+                onConfirm: function (formData) {
+                    codec.export({
+                        scale: new THREE.Vector3(formData.scaleX, formData.scaleY, formData.scaleZ),
+                        binary: (formData.binary === "binary" ? true : false),
+                        embedImages: formData.embedImages,
+                        animations: formData.animations
+                    });
+                    this.hide()
+                }
+            }).show();
         }
     });
 
@@ -214,11 +260,11 @@ function init_GLTFExporterPlugin() {
         author: 'Elenterius',
         icon: 'icon-objects',
         description: 'Export Model to glTF Fileformat',
-        version: '1.0.0-alpha.3',
+        version: '1.0.0-alpha.4',
         variant: 'both',
         onload() {
             MenuBar.addAction(codec.export_action, 'file.export');
-            console.log("glTF Exporter [1.0.0-alpha.3] loaded!");
+            console.log("glTF Exporter [1.0.0-alpha.4] loaded!");
         },
         onunload() {
             codec.export_action.delete();
