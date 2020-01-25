@@ -89,41 +89,6 @@ function init_GLTFExporterPlugin() {
             if (keyframeTracks.length > 0) animationClips.push(new THREE.AnimationClip(animation.name, animation.length, keyframeTracks));
         });
 
-        ///////////////////////////////////////////////////////////////////////////////////// OLD
-        // const animationClips = [];
-        // for (const [animName, anim] of Object.entries(Animator.buildFile().animations)) {
-
-        //     if (anim.hasOwnProperty('bones')) {
-        //         const keyframeTracks = [];
-        //         for (const [boneName, bone] of Object.entries(anim.bones)) {
-        //             for (const [trackName, track] of Object.entries(bone)) { //eg. position, rotation or scale
-
-        //                 const times = [];
-        //                 const data = [];
-        //                 if (trackName === "rotation") {
-        //                     for (const [time, values] of Object.entries(track)) {
-        //                         times.push(parseFloat(time));
-        //                         var q = new THREE.Quaternion();
-        //                         q.setFromEuler(new THREE.Euler(THREE.Math.degToRad(-values[0]), THREE.Math.degToRad(-values[1]), THREE.Math.degToRad(values[2]))); // 'ZYX'
-        //                         data.push(q.x, q.y, q.z, q.w);
-        //                     }
-        //                     if (data.length > 0) keyframeTracks.push(new THREE.QuaternionKeyframeTrack(boneName + ".quaternion", times, data)); // InterpolateLinear is default
-        //                 }
-        //                 else {
-        //                     for (const [time, values] of Object.entries(track)) {
-        //                         times.push(parseFloat(time));
-        //                         data.push(values[0], values[1], values[2]);
-        //                     }
-        //                     if (data.length > 0) keyframeTracks.push(new THREE.VectorKeyframeTrack(boneName + "." + trackName, times, data)); // InterpolateLinear is default
-        //                 }
-        //             }
-        //         }
-        //         // const duration = anim.hasOwnProperty('animation_length') ? anim.animation_length : 0;
-        //         animationClips.push(new THREE.AnimationClip(animName, anim.animation_length, keyframeTracks));
-        //     }
-        // }
-        //////////////////////////////////////////////////////////
-
         return animationClips;
     }
 
@@ -138,34 +103,25 @@ function init_GLTFExporterPlugin() {
                 new Promise(resolve => {
                     const exporter = new THREE.GLTFExporter();
 
-                    //TODO: fix forward vector of model
-                    const blacklist = ["vertex_handles", "outline_group", "grid_group", "side_grid_x", "side_grid_y", "sun", "lights"]; // ambient light (sun) is not supported; could export lights
-                    const exportlist = [];
-                    scene.children.forEach(child => {
+                    // ambient light (sun) is not supported; could export lights
+                    const blacklist = ["vertex_handles", "outline_group", "grid_group", "side_grid_x", "side_grid_y", "sun", "lights"];
+
+                    let exportgroup = new THREE.Group();
+                    exportgroup.rotation.y = 180; // rotate to match standard forward vector of glTF (+Z)
+
+                    scene.children.forEach(child => { // root level
                         if (!blacklist.includes(child.name) && !(child instanceof THREE.TransformControls)) {
-
-                            // exclude meshes that are disabled for export
-                            if (child instanceof THREE.Mesh) {
-                                const mesh = elements.findInArray('uuid', child.name)
-                                if (!mesh) return;
-                                if (mesh.export === false) return;
-                            };
-
-                            exportlist.push(child);
+                            exportgroup.add(child.clone(true));
                         }
                     });
 
-                    if (options === undefined) {
-                        options = {};
-                    }
-
-                    const scale = new THREE.Vector3(1,1,1); //TODO: implement rescaling of model
+                    const scale = new THREE.Vector3(1, 1, 1); //TODO: implement rescaling of model
                     const binary = false; //TODO: add support for writing binary to file
                     const embedImages = true; // options.embedImages; TODO: fix NON-Relative URI path
                     const animations = options.animations;
                     const animationClips = animations ? buildAnimationClips() : [];
 
-                    exporter.parse(exportlist, gltf => resolve(gltf), { binary: binary, embedImages: embedImages, animations: animationClips });
+                    exporter.parse(elements, exportgroup, gltf => resolve(gltf), { binary: binary, embedImages: embedImages, animations: animationClips });
                 }).then(gltf => {
                     scene.position.copy(old_scene_position);
                     resolveMain(JSON.stringify(gltf));
