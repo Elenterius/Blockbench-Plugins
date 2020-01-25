@@ -197,7 +197,7 @@ function init_GLTFExporterPlugin() {
                             width: 100% !important;
                             display: block !important;
                         }
-                        #gltf_export_options > div:nth-child(10) {
+                        #gltf_export_options > div:nth-child(7) {
                             display: block;
                             margin-top: 1rem;
                         }
