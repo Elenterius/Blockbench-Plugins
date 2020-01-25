@@ -97,8 +97,8 @@ function init_GLTFExporterPlugin() {
         extension: 'gltf',
         compile(options) {
             return new Promise(resolveMain => {
-                const old_scene_position = new THREE.Vector3().copy(scene.position);
-                scene.position.set(0, 0, 0); // not needed when exporting the geometry seperately from the scene
+                // const old_scene_position = new THREE.Vector3().copy(scene.position);
+                // scene.position.set(0, 0, 0); // not needed when exporting the geometry seperately from the scene
 
                 new Promise(resolve => {
                     const exporter = new THREE.GLTFExporter();
@@ -107,7 +107,8 @@ function init_GLTFExporterPlugin() {
                     const blacklist = ["vertex_handles", "outline_group", "grid_group", "side_grid_x", "side_grid_y", "sun", "lights"];
 
                     let exportgroup = new THREE.Group();
-                    exportgroup.rotation.y = 180; // rotate to match standard forward vector of glTF (+Z)
+                    exportgroup.name = options.geometry_name;
+                    exportgroup.rotation.y = THREE.Math.degToRad(180); // rotate to match standard forward vector of glTF (+Z)
 
                     scene.children.forEach(child => { // root level
                         if (!blacklist.includes(child.name) && !(child instanceof THREE.TransformControls)) {
@@ -123,7 +124,7 @@ function init_GLTFExporterPlugin() {
 
                     exporter.parse(elements, exportgroup, gltf => resolve(gltf), { binary: binary, embedImages: embedImages, animations: animationClips });
                 }).then(gltf => {
-                    scene.position.copy(old_scene_position);
+                    // scene.position.copy(old_scene_position);
                     resolveMain(JSON.stringify(gltf));
                 });
             });
@@ -164,6 +165,7 @@ function init_GLTFExporterPlugin() {
         description: 'Export Model to GLTF',
         category: 'file',
         click: () => {
+            const name = Project.geometry_name || "object";
             new Dialog({
                 id: 'gltf_export_options',
                 title: 'Export glTF',
@@ -191,6 +193,7 @@ function init_GLTFExporterPlugin() {
                     '<h1>Export Settings</h1>'
                 ],
                 form: {
+                    geometry_name: { label: 'Geometry Name', type: 'input', value: name},
                     // binary: { label: 'Format', type: 'select', options: { json: '.gltf (json)', binary: '.glb (binary)' }, default: 'json' },
                     // scaleX: { label: 'Scale X', type: 'number', value: 1.0, step: 0.0001, readonly: true },
                     // scaleY: { label: 'Scale Y', type: 'number', value: 1.0, step: 0.0001, readonly: true },
@@ -203,7 +206,8 @@ function init_GLTFExporterPlugin() {
                         scale: new THREE.Vector3(formData.scaleX, formData.scaleY, formData.scaleZ),
                         binary: (formData.binary === "binary" ? true : false),
                         embedImages: formData.embedImages,
-                        animations: formData.animations
+                        animations: formData.animations,
+                        geometry_name: formData.geometry_name
                     });
                     this.hide()
                 }
