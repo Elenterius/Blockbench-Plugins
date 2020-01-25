@@ -117,42 +117,57 @@ function init_GLTFExporterPlugin() {
                     });
 
                     const scale = new THREE.Vector3(1, 1, 1); //TODO: implement rescaling of model
-                    const binary = false; //TODO: add support for writing binary to file
                     const embedImages = true; // options.embedImages; TODO: fix NON-Relative URI path
-                    const animations = options.animations;
-                    const animationClips = animations ? buildAnimationClips() : [];
+                    const animationClips = options.animations ? buildAnimationClips() : [];
 
-                    exporter.parse(elements, exportgroup, gltf => resolve(gltf), { binary: binary, embedImages: embedImages, animations: animationClips });
+                    exporter.parse(elements, exportgroup, gltf => resolve(gltf), { binary: options.binary, embedImages: embedImages, animations: animationClips });
                 }).then(gltf => {
                     // scene.position.copy(old_scene_position);
-                    resolveMain(JSON.stringify(gltf));
+                    resolveMain(options.binary ? gltf : JSON.stringify(gltf));
                 });
             });
         },
         export(options) {
             const scope = this;
+            const extension = options.binary ? 'glb' : this.extension;
             if (isApp) {
                 Blockbench.export({
                     type: this.name,
-                    extensions: [this.extension],
+                    extensions: [extension],
                     name: this.fileName(),
                     startpath: this.startPath(),
                     custom_writer: (content, path) => {
                         scope.compile(options).then(gltf => {
-                            content = gltf;
-                            Blockbench.writeFile(path, { content }, path => scope.afterSave(path));
+                            if (!options.binary) {
+                                Blockbench.writeFile(path, { content: gltf }, path => scope.afterSave(path));
+                            }
+                            else {
+                                if (!path) return;
+
+                                // write buffer to file
+                                fs.writeFileSync(path, Buffer.from(gltf));
+                                scope.afterSave(path);
+                            }
                         });
                     },
                 })
             }
             else {
-                this.compile(options).then(content => {
-                    Blockbench.export({
-                        type: this.name,
-                        extensions: [this.extension],
-                        name: this.fileName(),
-                        content: content,
-                    }, path => scope.afterDownload(path));
+                this.compile(options).then(gltf => {
+                    if (!options.binary) {
+                        Blockbench.export({
+                            type: this.name,
+                            extensions: [extension],
+                            name: this.fileName(),
+                            content: gltf,
+                        }, path => scope.afterDownload(path));
+                    }
+                    else { //binary
+                        var file_name = this.fileName() + '.' + extension;
+                        var blob = new Blob([gltf], { type: "application/octet-stream" });
+                        saveAs(blob, file_name);
+                        scope.afterDownload(file_name);
+                    }
                 });
             }
         }
@@ -194,7 +209,7 @@ function init_GLTFExporterPlugin() {
                 ],
                 form: {
                     geometry_name: { label: 'Geometry Name', type: 'input', value: name },
-                    // binary: { label: 'Format', type: 'select', options: { json: '.gltf (json)', binary: '.glb (binary)' }, default: 'json' },
+                    binary: { label: 'Format', type: 'select', options: { json: '.gltf (json)', binary: '.glb (binary)' }, default: 'json' },
                     // scaleX: { label: 'Scale X', type: 'number', value: 1.0, step: 0.0001, readonly: true },
                     // scaleY: { label: 'Scale Y', type: 'number', value: 1.0, step: 0.0001, readonly: true },
                     // scaleZ: { label: 'Scale Z', type: 'number', value: 1.0, step: 0.0001, readonly: true },
@@ -215,27 +230,32 @@ function init_GLTFExporterPlugin() {
         }
     });
 
-    const version = '1.0.0-alpha.5';
+    const version = '1.0.0-alpha.5.1.0';
     Plugin.register('gltf_exporter', {
         title: 'glTF Exporter',
         author: 'Elenterius',
         icon: 'icon-objects',
-        description: 'Export Model with Animation to GL Transmission Format (glTF) Version 2.0',
-        about: '',
+        description: 'Export Model with Animations to GL Transmission Format (glTF) Version 2.0',
+        about: 'You can use https://sandbox.babylonjs.com/ to view your exported file online (gracefully handles glTF file errors & includes glTF validation reports)',
         version: version,
         variant: 'both',
         onload() {
             MenuBar.addAction(codec.export_action, 'file.export');
             console.log(`glTF Exporter [${version}] loaded!`);
 
-            const delay = document.querySelector('#plugin_list > li[plugin=gltf_exporter]') === undefined ? 500 : 100;
             setTimeout(() => {
                 const li = document.querySelector('#plugin_list > li[plugin=gltf_exporter]');
                 if (!li.querySelector('div.github')) {
                     const ahref = '<div class="github">view on <a href="https://github.com/Elenterius/Blockbench-Plugins">github</a></div>';
                     li.querySelector('div.description').insertAdjacentHTML('afterend', ahref);
                 }
-            }, delay);
+                const vdiv = li.querySelector('span.version') || document.createElement("span");
+                vdiv.innerHTML = `&nbsp;&nbsp;${version}`;
+                vdiv.setAttribute('class', 'version');
+                vdiv.style.opacity = 0.6;
+                vdiv.style.fontSize = '0.75em';
+                li.querySelector('div.title').appendChild(vdiv);
+            }, 300);
         },
         onunload() {
             codec.export_action.delete();
